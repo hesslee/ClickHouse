@@ -276,7 +276,8 @@ BlockIO InterpreterCreateQuery::createDatabase(ASTCreateQuery & create)
 
     if (create.storage->engine->name == "Atomic"
         || create.storage->engine->name == "Replicated"
-        || create.storage->engine->name == "MaterializedPostgreSQL")
+        || create.storage->engine->name == "MaterializedPostgreSQL"
+        || create.storage->engine->name == "Shared")
     {
         if (create.attach && create.uuid == UUIDHelpers::Nil)
             throw Exception(ErrorCodes::INCORRECT_QUERY, "UUID must be specified for ATTACH. "

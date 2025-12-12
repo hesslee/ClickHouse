@@ -263,8 +263,8 @@ void ServerAsynchronousMetrics::updateImpl(TimePoint update_time, TimePoint curr
                 {
                     calculateMax(max_part_count_for_partition, table_merge_tree->getMaxPartsCountAndSizeForPartition().first);
 
-                    size_t bytes = table_merge_tree->totalBytes(getContext()).value();
-                    size_t rows = table_merge_tree->totalRows(getContext()).value();
+                    size_t bytes = table_merge_tree->totalBytes(getContext()).value_or(0);
+                    size_t rows = table_merge_tree->totalRows(getContext()).value_or(0);
                     size_t parts = table_merge_tree->getActivePartsCount();
 
                     total_number_of_bytes += bytes;
