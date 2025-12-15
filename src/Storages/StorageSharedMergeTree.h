@@ -1,11 +1,14 @@
 #pragma once
 
+#include <Core/BackgroundSchedulePool.h>
+#include <Storages/MergeTree/BackgroundJobsAssignee.h>
 #include <Storages/MergeTree/MergeTreeData.h>
-#include <Storages/IStorage.h>
 #include <Common/ZooKeeper/ZooKeeper.h>
 
 namespace DB
 {
+
+class BackgroundJobsAssignee; // Forward declaration for BackgroundJobsAssignee
 
 class StorageSharedMergeTree final : public MergeTreeData
 {
@@ -27,9 +30,10 @@ public:
 
     void startup() override;
     void shutdown(bool is_drop) override;
-    
+
     // Write data to shared storage and commit to Keeper
-    SinkToStoragePtr write(const ASTPtr & query, const StorageMetadataPtr & metadata_snapshot, ContextPtr context_, bool async_insert) override;
+    SinkToStoragePtr
+    write(const ASTPtr & query, const StorageMetadataPtr & metadata_snapshot, ContextPtr context_, bool async_insert) override;
 
     void read(
         QueryPlan & query_plan,
@@ -48,7 +52,8 @@ public:
     void dropPartNoWaitNoThrow(const String & part_name) override;
     void dropPart(const String & part_name, bool detach, ContextPtr context_) override;
     void dropPartition(const ASTPtr & partition, bool detach, ContextPtr context_) override;
-    PartitionCommandsResultInfo attachPartition(const ASTPtr & partition, const StorageMetadataPtr & metadata_snapshot, bool part, ContextPtr context_) override;
+    PartitionCommandsResultInfo
+    attachPartition(const ASTPtr & partition, const StorageMetadataPtr & metadata_snapshot, bool part, ContextPtr context_) override;
     void replacePartitionFrom(const StoragePtr & source_table, const ASTPtr & partition, bool replace, ContextPtr context_) override;
     void movePartitionToTable(const StoragePtr & dest_table, const ASTPtr & partition, ContextPtr context_) override;
     bool partIsAssignedToBackgroundOperation(const DataPartPtr & part) const override;
@@ -62,10 +67,25 @@ public:
     // Leaderless merge selection
     bool scheduleDataProcessingJob(BackgroundJobsAssignee & assignee) override;
 
+    bool optimize(
+        const ASTPtr & query,
+        const StorageMetadataPtr & metadata_snapshot,
+        const ASTPtr & partition,
+        bool final,
+        bool deduplicate,
+        const Names & deduplicate_by_columns,
+        bool cleanup,
+        ContextPtr local_context) override;
+
+    Int64 allocateBlockNumber();
+    String getZooKeeperPath() const { return zookeeper_path; }
+
+    BackgroundSchedulePool::TaskHolder part_watcher_task;
+    void processPartChanges();
+    void startPartWatcher();
+
 private:
     String zookeeper_path;
-    
-    void loadTableConfig();
 };
 
 }

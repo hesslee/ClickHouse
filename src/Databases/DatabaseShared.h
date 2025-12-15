@@ -2,9 +2,12 @@
 
 #include <Databases/DatabaseAtomic.h>
 #include <Common/ZooKeeper/ZooKeeper.h>
+#include <Core/BackgroundSchedulePool.h>
 
 namespace DB
 {
+
+
 
 class DatabaseShared final : public DatabaseAtomic
 {
@@ -26,6 +29,10 @@ private:
     String replica_name;
     
     zkutil::ZooKeeperPtr getZooKeeper() const;
+
+    BackgroundSchedulePool::TaskHolder verification_task;
+    void processReplicationQueue();
+    void scheduleTask();
 };
 
 }

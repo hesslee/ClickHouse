@@ -1,17 +1,29 @@
 #!/bin/bash
 set -e
 
-CLICKHOUSE_SERVER=clickhouse-server
-CLICKHOUSE_CLIENT=clickhouse-client
+CLICKHOUSE_SERVER=${CLICKHOUSE_SERVER:-clickhouse-server}
+CLICKHOUSE_CLIENT=${CLICKHOUSE_CLIENT:-clickhouse-client}
 CONFIG_FILE="tests/shared/jfs/config.xml"
 
-# Start Server
-echo "Starting ClickHouse Server..."
-$CLICKHOUSE_SERVER --config-file=$CONFIG_FILE --daemon
+# It is not working.
+# # Cleanup previous run
+# rm -f ./tmp/clickhouse-server.pid
 
-# Wait for server to start
-echo "Waiting for server to start..."
-sleep 15
+# Already started ClickHouse Server on another terminal.
+# # Start Server
+# echo "Starting ClickHouse Server..."
+# $CLICKHOUSE_SERVER --config-file=$CONFIG_FILE --daemon
+# 
+# # Wait for server to start
+# echo "Waiting for server to start..."
+# for i in {1..60}; do
+#     if $CLICKHOUSE_CLIENT --port 9000 --query "SELECT 1" > /dev/null 2>&1; then
+#         echo "Server started."
+#         break
+#     fi
+#     echo "Waiting..."
+#     sleep 1
+# done
 
 # Create Database and Table
 echo "Creating Database and Table..."
@@ -35,6 +47,7 @@ else
     $CLICKHOUSE_CLIENT --port 9000 --query "SELECT * FROM shared_db.test_table;"
 fi
 
-# Stop Server
-echo "Stopping ClickHouse Server..."
-pkill -F ./tmp/clickhouse-server.pid || true
+# It is not working.
+# # Stop Server
+# echo "Stopping ClickHouse Server..."
+# pkill -F ./tmp/clickhouse-server.pid || true

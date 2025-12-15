@@ -1,5 +1,6 @@
 #include <Databases/DatabaseShared.h>
 #include <Interpreters/Context.h>
+#include <Common/logger_useful.h>
 
 
 namespace DB
@@ -12,6 +13,46 @@ DatabaseShared::DatabaseShared(const String & name_, const String & metadata_pat
     , zookeeper_path(zookeeper_path_)
     , replica_name(replica_name_)
 {
+    verification_task = getContext()->getSchedulePool().createTask(StorageID(getDatabaseName(), "_verification", uuid), "DatabaseSharedVerification", [this]{ processReplicationQueue(); });
+    scheduleTask();
+}
+
+void DatabaseShared::scheduleTask()
+{
+    verification_task->scheduleAfter(2000); // Check every 2 seconds
+}
+
+void DatabaseShared::processReplicationQueue()
+{
+    try
+    {
+        auto zookeeper = getZooKeeper();
+        String tables_path = zookeeper_path + "/tables";
+        
+        if (zookeeper->exists(tables_path))
+        {
+            Strings tables = zookeeper->getChildren(tables_path);
+            std::set<String> zk_tables(tables.begin(), tables.end());
+            
+            // Check for new tables
+            for (const auto & table_name : tables)
+            {
+                if (!isTableExist(table_name, getContext()))
+                {
+                    // For now, just log. Implementation of creating table from ZK query 
+                    // requires parsing CREATE query and executing it locally without ZK write.
+                    // This creates infinite loop if not careful.
+                    // We need 'Context::createTable' to support 'NO_ZK_WRITE' flag or similar.
+                }
+            }
+        }
+    }
+    catch (...)
+    {
+        tryLogCurrentException(log, "Failed to sync tables in DatabaseShared");
+    }
+    
+    scheduleTask();
 }
 
 void DatabaseShared::loadStoredObjects(ContextMutablePtr context_, LoadingStrictnessLevel mode)
